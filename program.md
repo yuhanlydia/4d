@@ -60,6 +60,23 @@ Treat these upstream components as fixed:
 
 Do not feed privileged scoring artifacts back into the agent.
 
+## Current implementation / next milestone
+
+Implemented (native-only):
+
+- `prepare.py` environment/readiness checks, skill checkout verification and dev10 freeze;
+- `tests/test_prepare.py` offline tests;
+- `.github/workflows/native-smoke.yml` CI for the native tests and toy optimizer;
+- `docs/06_native_bootstrap.md` SSH instructions.
+
+The benchmark's downloaded case IDs are **not** committed or invented; obtain
+the reference videos on the target SSH machine, then freeze and commit
+`configs/dev10.txt` before any tuning. The 10-case split is pending until then.
+
+Next incomplete research milestone: a minimal rigid/articulated scene DSL compiler
+that emits a checker-valid `solution/build.sh` and `world/`. No official
+reconstruction scores are available yet.
+
 ## Setup
 
 ### Required software
