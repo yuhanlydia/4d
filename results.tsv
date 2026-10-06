@@ -1,0 +1,1 @@
+experiment_id	commit	case_set	model	params_b	quantization	method	gauge_fix	optimizer	proxy_loss	dynamic_iou	flow_distribution	track2d_dtw	trajectory_dtw	emd_step	scene_3d	semantic_dinov3	checker_ok	build_ok	peak_vram_gb	wall_s	model_calls	proxy_evals	blender_renders	keep	notes
