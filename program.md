@@ -73,9 +73,16 @@ The benchmark's downloaded case IDs are **not** committed or invented; obtain
 the reference videos on the target SSH machine, then freeze and commit
 `configs/dev10.txt` before any tuning. The 10-case split is pending until then.
 
-Next incomplete research milestone: a minimal rigid/articulated scene DSL compiler
-that emits a checker-valid `solution/build.sh` and `world/`. No official
-reconstruction scores are available yet.
+The `scene.json` DSL/compiler source is now generated for cube/UV-sphere objects with
+static, linear-rigid, and hinge-articulated motion. It emits a self-contained
+`solution/build.sh`, `build.py`, and frozen `scene.json` using native Blender only.
+Status: **generated_unexecuted** until the target machine runs Blender and the
+official `python -m checker` against a built world. No official reconstruction
+scores are available yet.
+
+Next incomplete milestone remains milestone 2 acceptance: execute rigid and hinge
+smoke scenes natively, verify render metadata with ffprobe, and pass the official
+checker. Only then proceed to legal video measurement extraction.
 
 ## Setup
 
