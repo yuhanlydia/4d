@@ -64,15 +64,25 @@ Do not feed privileged scoring artifacts back into the agent.
 
 ### Required software
 
-Use the official 4DCodeBench environment and verify:
+Use a **native environment only**. Docker is explicitly out of scope.
+
+Verify:
 
 ```bash
 python --version
 nvidia-smi
-docker --version
+conda --version
+blender --version
+ffmpeg -version
 ```
 
-Build or install the official environments according to the upstream README.
+Before each research session, refresh the project-local Research Autopilot checkout:
+
+```bash
+bash scripts/update_research_autopilot.sh
+```
+
+Then read `.tools/research-autopilot/SKILL.md` and follow the newest applicable workflow instructions.
 
 ### Upstream benchmark preparation
 
@@ -84,18 +94,15 @@ python scripts/download_data.py --videos-only
 
 Download full evaluation data/checkpoints only on the scoring machine/process when needed.
 
-Build the agent images:
+Create the official **native conda scorer environment**:
 
 ```bash
-docker build -t 4dcb/sim-base:dev -f harness/base/Dockerfile .
-docker build -t 4dcb/agent:dev -f harness/agent/Dockerfile .
+conda env create -f environment.yml
+conda activate 4dcodebench
+scripts/setup_env.sh
 ```
 
-Build the scorer image when official scoring is needed:
-
-```bash
-docker build -t 4dcb/scorer:dev -f harness/scorer/Dockerfile .
-```
+Do not build or invoke Docker images. The Opt4D inference path must be implemented as native Python/Blender wrappers, and official scoring should use the direct Python entrypoints from the 4DCodeBench repository.
 
 ### Readiness checks
 
@@ -103,37 +110,45 @@ Before an experiment:
 
 1. GPU is visible.
 2. benchmark video exists for every selected case;
-3. agent image starts;
-4. a trivial legal submission passes `python -m checker`;
-5. the same run can be scored and produces `results/reward.json`;
-6. this repository's `results.tsv` is writable.
+3. the native Python environment imports required packages;
+4. Blender CLI starts without a display;
+5. a trivial legal submission passes `python -m checker`;
+6. the same run can be scored through the direct scorer entrypoint and produces `results/reward.json`;
+7. this repository's `results.tsv` is writable.
 
 ## Baseline commands
 
-Canonical official inference command:
+Opt4D inference is intentionally **native** and must not call the Docker/SIF harness. The target command is:
 
 ```bash
-python harness/runtime/infer.py \
-  --jobs .local/jobs.toml \
-  --runtime .local/runtime.toml
+python run_experiment.py \
+  --method direct \
+  --model <model> \
+  --cases configs/dev10.txt
 ```
 
-Canonical official scoring command for a first scoring pass:
+Official scoring should use the 4DCodeBench direct Python entrypoints with a manifest.
+
+First prepare reference estimates once:
 
 ```bash
-python harness/runtime/score.py \
-  --jobs .local/jobs.toml \
-  --runtime .local/runtime.toml \
-  --stage prepare,score
+roots="--manifest manifest.json --cases cases --data data --checkpoints checkpoints"
+python -m scorer.prepare $roots
 ```
 
-After reference estimates exist:
+Then score candidate worlds:
 
 ```bash
-python harness/runtime/score.py \
-  --jobs .local/jobs.toml \
-  --runtime .local/runtime.toml
+python -m scorer $roots --runs runs
 ```
+
+Optional visualization:
+
+```bash
+python -m visualizer $roots --runs runs
+```
+
+The project-level `evaluate.py` wrapper should construct the manifest, invoke these direct entrypoints, and parse the resulting `reward.json` files.
 
 ## Output contract
 
@@ -264,7 +279,7 @@ If correlation is weak, improve measurement/proxy design before adding a more so
 
 Retry once when failure is clearly infrastructural:
 
-- transient container launch failure;
+- transient native process launch failure;
 - file-lock issue;
 - interrupted process;
 - temporary GPU allocation failure.
