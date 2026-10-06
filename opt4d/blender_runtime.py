@@ -1,12 +1,13 @@
 """Blender-side runtime emitted as solution/build.py by opt4d.scene.
 
 Usage (normally via build.sh):
-  blender --background --factory-startup --python build.py -- scene.json world
+  blender --background --factory-startup --python build.py -- world
 """
 from __future__ import annotations
 
 import json
 import math
+import subprocess
 import sys
 from pathlib import Path
 
@@ -14,14 +15,18 @@ import bpy
 import numpy as np
 from mathutils import Matrix, Vector
 
+SCENE_SPEC = None
+
 
 def args_after_dash():
     if "--" not in sys.argv:
-        raise SystemExit("expected -- scene.json world")
+        raise SystemExit("expected -- world")
     args = sys.argv[sys.argv.index("--") + 1:]
-    if len(args) != 2:
-        raise SystemExit("expected scene.json and world output directory")
-    return Path(args[0]), Path(args[1])
+    if len(args) == 1 and SCENE_SPEC is not None:
+        return SCENE_SPEC, Path(args[0])
+    if len(args) == 2:
+        return json.loads(Path(args[0]).read_text(encoding="utf-8")), Path(args[1])
+    raise SystemExit("expected -- world")
 
 
 def make_object(spec):
@@ -56,7 +61,7 @@ def animate(obj, spec, frames, fps):
         obj.keyframe_insert("location", frame=1)
         obj.location = p0 + velocity * ((frames - 1) / fps)
         obj.keyframe_insert("location", frame=frames)
-        for curve in obj.animation_data.action.fcurves:
+        for curve in action_fcurves(obj.animation_data.action):
             for point in curve.keyframe_points:
                 point.interpolation = "LINEAR"
         return True
@@ -78,11 +83,23 @@ def animate(obj, spec, frames, fps):
         empty.keyframe_insert("rotation_quaternion", frame=1)
         empty.rotation_quaternion = Matrix.Rotation(a1, 4, axis).to_quaternion()
         empty.keyframe_insert("rotation_quaternion", frame=frames)
-        for curve in empty.animation_data.action.fcurves:
+        for curve in action_fcurves(empty.animation_data.action):
             for point in curve.keyframe_points:
                 point.interpolation = "LINEAR"
         return True
     raise ValueError(kind)
+
+
+def action_fcurves(action):
+    """Return F-curves across Blender's legacy and layered Action APIs."""
+    if hasattr(action, "fcurves"):
+        return action.fcurves
+    curves = []
+    for layer in action.layers:
+        for strip in layer.strips:
+            for channelbag in strip.channelbags:
+                curves.extend(channelbag.fcurves)
+    return curves
 
 
 def configure_camera(scene, spec):
@@ -133,8 +150,7 @@ def evaluated_mesh_world(obj, depsgraph):
 
 
 def main():
-    scene_path, world = args_after_dash()
-    spec = json.loads(scene_path.read_text(encoding="utf-8"))
+    spec, world = args_after_dash()
     video = spec["video"]
     world.mkdir(parents=True, exist_ok=True)
     (world / "meshes").mkdir()
@@ -205,13 +221,29 @@ def main():
         encoding="utf-8",
     )
 
-    scene.render.image_settings.file_format = "FFMPEG"
-    scene.render.ffmpeg.format = "MPEG4"
-    scene.render.ffmpeg.codec = "H264"
-    scene.render.ffmpeg.constant_rate_factor = "MEDIUM"
-    scene.render.filepath = str((world / "render.mp4").resolve())
+    frames_dir = world / "frames"
+    frames_dir.mkdir()
+    scene.render.image_settings.file_format = "PNG"
+    scene.render.filepath = str((frames_dir / "frame_").resolve())
     bpy.ops.render.render(animation=True)
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-y",
+            "-framerate",
+            str(video["fps"]),
+            "-i",
+            str((frames_dir / "frame_%04d.png").resolve()),
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            str((world / "render.mp4").resolve()),
+        ],
+        check=True,
+    )
 
 
 if __name__ == "__main__":
     main()
+
