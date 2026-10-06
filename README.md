@@ -25,16 +25,16 @@ with a stronger method candidate:
 - [Experiment result schema](results.tsv)
 - [Full-covariance CEM prototype](opt4d/cem.py)
 - [Proxy losses](opt4d/losses.py)
-- [Toy system-identification smoke test](scripts/toy_optimize.py)
+- [Native pipeline entrypoints](prepare.py)
 
 ## First engineering milestone
 
-1. Run `python scripts/toy_optimize.py`.
-2. Define a small `scene.json` DSL.
-3. Compile one rigid-body template.
-4. Build legal observation-only proxy measurements.
-5. Run direct-small-model vs DSL vs CEM vs gauge-fixed CEM on 10 fixed cases.
-6. Only then add spline-to-physics homotopy.
+1. Run `python prepare.py --benchmark ../4DCodeBench --strict --require-gpu`.
+2. Run `python -m unittest discover -s tests -v`.
+3. Compile a legal `scene.json` and run its native `build.sh`.
+4. Run the official 4DCodeBench checker on the generated workspace.
+5. Run the official scorer on the fixed `configs/dev10.txt` split.
+6. Only after this closed loop passes, start the direct, DSL, gauge, CEM, and homotopy ablations.
 
 ## Important novelty boundary
 
@@ -67,11 +67,14 @@ python prepare.py --benchmark ../4DCodeBench --json .local/readiness.json
 python prepare.py --benchmark ../4DCodeBench --freeze-cases
 python prepare.py --benchmark ../4DCodeBench --strict --require-gpu
 python -m unittest discover -s tests -v
-python scripts/toy_optimize.py
+python compile_scene.py <scene.json> <run>/solution
+bash <run>/solution/build.sh
+# Then run the official checker and scorer from 4DCodeBench.
 ```
 
-**Readiness is not a benchmark result.** The scene compiler, model integration,
-and official evaluation wrapper are next milestones. No 4DCodeBench gain has
-been measured yet. The `configs/dev10.txt` split is generated on the target
-machine once the reference videos are available; no case IDs are fabricated.
+**Readiness is not a method comparison.** The native compiler, Blender runtime,
+official checker, and official scorer have now passed an engineering validation
+on `synthetic/B_01`; the recorded scores are not an Opt4D ablation claim. The
+`configs/dev10.txt` split is frozen and portable, and the next experiment is
+the fixed dev10 baseline/ablation matrix.
 
