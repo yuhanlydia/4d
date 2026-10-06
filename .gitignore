@@ -1,0 +1,10 @@
+.tools/
+.local/
+__pycache__/
+*.pyc
+.env
+.venv/
+runs/
+checkpoints/
+cases/
+data/
