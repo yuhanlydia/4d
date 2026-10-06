@@ -1,0 +1,124 @@
+"""Validated Opt4D scene DSL and native Blender solution compiler.
+
+The compiler never reads benchmark reference data. All video-dependent constants
+must already be frozen into scene.json by an earlier legal observation stage.
+"""
+from __future__ import annotations
+
+import json
+import math
+import shutil
+from pathlib import Path
+from typing import Any
+
+SCHEMA_VERSION = 1
+KINDS = {"cube", "uv_sphere"}
+MOTIONS = {"static", "linear", "hinge"}
+
+
+def _vec(value: Any, n: int, name: str) -> list[float]:
+    if not isinstance(value, list) or len(value) != n:
+        raise ValueError(f"{name} must be a length-{n} list")
+    out = [float(x) for x in value]
+    if not all(math.isfinite(x) for x in out):
+        raise ValueError(f"{name} must be finite")
+    return out
+
+
+def validate_scene(scene: dict[str, Any]) -> dict[str, Any]:
+    if scene.get("schema_version") != SCHEMA_VERSION:
+        raise ValueError(f"schema_version must be {SCHEMA_VERSION}")
+    video = scene.get("video")
+    if not isinstance(video, dict):
+        raise ValueError("video must be an object")
+    for key in ("width", "height", "frames"):
+        if not isinstance(video.get(key), int) or video[key] <= 0:
+            raise ValueError(f"video.{key} must be a positive integer")
+    fps = float(video.get("fps", 0))
+    if not math.isfinite(fps) or fps <= 0:
+        raise ValueError("video.fps must be positive")
+
+    camera = scene.get("camera")
+    if not isinstance(camera, dict):
+        raise ValueError("camera must be an object")
+    K = camera.get("intrinsics")
+    E = camera.get("extrinsic")
+    if not isinstance(K, list) or len(K) != 3 or any(not isinstance(r, list) or len(r) != 3 for r in K):
+        raise ValueError("camera.intrinsics must be 3x3")
+    if not isinstance(E, list) or len(E) != 4 or any(not isinstance(r, list) or len(r) != 4 for r in E):
+        raise ValueError("camera.extrinsic must be 4x4")
+    K = [[float(x) for x in r] for r in K]
+    E = [[float(x) for x in r] for r in E]
+    if not all(math.isfinite(x) for r in K + E for x in r):
+        raise ValueError("camera matrices must be finite")
+    if K[0][0] <= 0 or K[1][1] <= 0:
+        raise ValueError("camera focal lengths must be positive")
+
+    objects = scene.get("objects")
+    if not isinstance(objects, list) or not objects:
+        raise ValueError("objects must be a non-empty list")
+    ids: set[int] = set()
+    names: set[str] = set()
+    for i, obj in enumerate(objects):
+        if not isinstance(obj, dict):
+            raise ValueError(f"objects[{i}] must be an object")
+        oid = obj.get("id")
+        name = obj.get("name")
+        if not isinstance(oid, int) or not 1 <= oid <= 65535 or oid in ids:
+            raise ValueError(f"objects[{i}].id must be a unique uint16-positive integer")
+        if not isinstance(name, str) or not name or name in names:
+            raise ValueError(f"objects[{i}].name must be unique and non-empty")
+        ids.add(oid); names.add(name)
+        if obj.get("kind") not in KINDS:
+            raise ValueError(f"objects[{i}].kind must be one of {sorted(KINDS)}")
+        _vec(obj.get("size"), 3, f"objects[{i}].size")
+        _vec(obj.get("position"), 3, f"objects[{i}].position")
+        _vec(obj.get("rotation_euler", [0, 0, 0]), 3, f"objects[{i}].rotation_euler")
+        motion = obj.get("motion", {"type": "static"})
+        if not isinstance(motion, dict) or motion.get("type") not in MOTIONS:
+            raise ValueError(f"objects[{i}].motion.type must be one of {sorted(MOTIONS)}")
+        if motion["type"] == "linear":
+            _vec(motion.get("velocity"), 3, f"objects[{i}].motion.velocity")
+        elif motion["type"] == "hinge":
+            _vec(motion.get("axis"), 3, f"objects[{i}].motion.axis")
+            _vec(motion.get("pivot"), 3, f"objects[{i}].motion.pivot")
+            if sum(x*x for x in motion["axis"]) <= 1e-12:
+                raise ValueError(f"objects[{i}].motion.axis must be nonzero")
+            for key in ("angle_start", "angle_end"):
+                value = float(motion.get(key, 0))
+                if not math.isfinite(value):
+                    raise ValueError(f"objects[{i}].motion.{key} must be finite")
+    return scene
+
+
+def load_scene(path: str | Path) -> dict[str, Any]:
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError("scene root must be an object")
+    return validate_scene(data)
+
+
+def compile_solution(scene_path: str | Path, output_dir: str | Path) -> Path:
+    """Emit a self-contained native Blender solution directory."""
+    scene = load_scene(scene_path)
+    out = Path(output_dir)
+    if out.exists():
+        if not out.is_dir():
+            raise ValueError(f"output exists and is not a directory: {out}")
+    else:
+        out.mkdir(parents=True)
+    (out / "scene.json").write_text(json.dumps(scene, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    runtime = Path(__file__).with_name("blender_runtime.py")
+    if not runtime.is_file():
+        raise FileNotFoundError(runtime)
+    shutil.copyfile(runtime, out / "build.py")
+    build = """#!/usr/bin/env bash
+set -euo pipefail
+HERE="$(cd "$(dirname "$0")" && pwd)"
+rm -rf "$HERE/world"
+blender --background --factory-startup --python "$HERE/build.py" -- "$HERE/scene.json" "$HERE/world"
+"""
+    path = out / "build.sh"
+    path.write_text(build, encoding="utf-8")
+    path.chmod(0o755)
+    return out
