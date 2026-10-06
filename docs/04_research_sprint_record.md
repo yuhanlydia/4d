@@ -169,14 +169,15 @@ Stronger method-oriented alternative:
 
 ## Next implementation milestone
 
-The next engineering milestone should be intentionally small:
+The native engineering loop is now closed on one synthetic case:
 
-1. implement generic CEM;
-2. implement mask / sliced-Wasserstein / DTW proxy losses;
-3. prove them on a toy trajectory recovery problem;
-4. define `scene.json`;
-5. build one rigid-body executable template;
-6. run 10 fixed benchmark cases.
+1. freeze the audited `configs/dev10.txt` split;
+2. run `prepare.py --strict --require-gpu`;
+3. compile and render a native Blender workspace;
+4. pass the official checker;
+5. pass the official geometry/dynamics scorer;
+6. record the result without treating it as a method comparison.
 
-Do not start full benchmark sweeps or fine-tuning before this milestone passes.
+The next research step is the fixed dev10 baseline and ablation matrix. Do not
+start broad sweeps or fine-tuning before those rows have reproducible outputs.
 
