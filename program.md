@@ -1,0 +1,303 @@
+# Opt4D Research Autopilot Program
+
+## Goal
+
+Improve 4DCodeBench performance under a single ~22 GB GPU using 1B–7B models plus mathematical optimization.
+
+Primary success metrics:
+
+1. `dynamic_iou`
+2. `flow_distribution` where applicable
+3. `track2d_dtw` where applicable
+4. `trajectory_dtw` on synthetic cases
+5. `emd_step` on synthetic cases
+
+Secondary metrics:
+
+- `scene_3d`
+- `semantic_dinov3`
+- depth error
+- geometry-quality metrics
+- checker/build success
+- peak VRAM
+- wall time
+
+A result does **not** count as success if it improves appearance while dynamics regress, uses privileged benchmark ground truth inside the agent, or materially increases failure rate.
+
+## Repository roles
+
+This repository contains the research method, optimizer code, experiment configuration, and logs.
+
+The official benchmark remains the source of truth:
+
+https://github.com/4DCodeBench/4DCodeBench
+
+Do not modify the official scorer to improve results.
+
+## Editable scope
+
+Safe to edit:
+
+- `docs/`
+- `opt4d/`
+- `scripts/`
+- `configs/`
+- `results.tsv`
+- experiment-specific job/runtime configuration stored in this repository
+
+When an upstream 4DCodeBench checkout is used, only add wrappers/templates needed for the candidate method. Keep scorer/evaluation logic fixed.
+
+## Non-editable evaluation scope
+
+Treat these upstream components as fixed:
+
+- `scorer/`
+- official metric definitions
+- official benchmark reference data
+- privileged synthetic reference worlds
+- real-video annotations not available to the benchmark agent
+- checker semantics
+
+Do not feed privileged scoring artifacts back into the agent.
+
+## Setup
+
+### Required software
+
+Use the official 4DCodeBench environment and verify:
+
+```bash
+python --version
+nvidia-smi
+docker --version
+```
+
+Build or install the official environments according to the upstream README.
+
+### Upstream benchmark preparation
+
+From the 4DCodeBench repository:
+
+```bash
+python scripts/download_data.py --videos-only
+```
+
+Download full evaluation data/checkpoints only on the scoring machine/process when needed.
+
+Build the agent images:
+
+```bash
+docker build -t 4dcb/sim-base:dev -f harness/base/Dockerfile .
+docker build -t 4dcb/agent:dev -f harness/agent/Dockerfile .
+```
+
+Build the scorer image when official scoring is needed:
+
+```bash
+docker build -t 4dcb/scorer:dev -f harness/scorer/Dockerfile .
+```
+
+### Readiness checks
+
+Before an experiment:
+
+1. GPU is visible.
+2. benchmark video exists for every selected case;
+3. agent image starts;
+4. a trivial legal submission passes `python -m checker`;
+5. the same run can be scored and produces `results/reward.json`;
+6. this repository's `results.tsv` is writable.
+
+## Baseline commands
+
+Canonical official inference command:
+
+```bash
+python harness/runtime/infer.py \
+  --jobs .local/jobs.toml \
+  --runtime .local/runtime.toml
+```
+
+Canonical official scoring command for a first scoring pass:
+
+```bash
+python harness/runtime/score.py \
+  --jobs .local/jobs.toml \
+  --runtime .local/runtime.toml \
+  --stage prepare,score
+```
+
+After reference estimates exist:
+
+```bash
+python harness/runtime/score.py \
+  --jobs .local/jobs.toml \
+  --runtime .local/runtime.toml
+```
+
+## Output contract
+
+For each benchmark run, inspect:
+
+- `runs/<kind>/<case>/<system>/<trial>/run.json`
+- `runs/<kind>/<case>/<system>/<trial>/results/reward.json`
+- `runs/<kind>/<case>/<system>/<trial>/results/reward.detail.json`
+- `workspace/world/`
+- `workspace/solution/`
+
+Each research experiment must append one aggregate row or a clearly identified group of per-case rows to `results.tsv`.
+
+Required stable summary fields:
+
+- experiment id;
+- git commit;
+- model size/quantization;
+- method switches;
+- checker/build success;
+- proxy loss;
+- official dynamics metrics;
+- peak VRAM;
+- wall time;
+- keep/discard decision.
+
+The official `reward.json` is the metric source of truth.
+
+## Development-set policy
+
+Freeze a small development set before optimization.
+
+Recommended first milestone:
+
+- 10 rigid/articulated cases;
+- include real and synthetic cases if practical;
+- do not change the case set after seeing method failures unless the change is documented.
+
+After the method stabilizes, expand evaluation.
+
+## Success criteria
+
+A focused change is **KEEP** when all conditions hold:
+
+1. checker/build success does not regress;
+2. mean available official dynamics metrics improve on the fixed development set, or are statistically indistinguishable while resource cost decreases substantially;
+3. no major secondary geometry regression appears;
+4. the gain is not caused by privileged evaluator information;
+5. results reproduce in at least one repeated run for stochastic methods.
+
+Tie-break order:
+
+1. dynamics score;
+2. executable success rate;
+3. geometry;
+4. peak VRAM;
+5. wall time.
+
+## Experiment loop
+
+For every experiment:
+
+1. Inspect git state and last `results.tsv` rows.
+2. Make exactly one focused methodological change.
+3. Run the cheapest legal proxy/smoke test.
+4. If the smoke test fails, fix only obvious implementation defects.
+5. Run the fixed development-set experiment.
+6. Run official scoring.
+7. Parse `reward.json`.
+8. Append results to `results.tsv`.
+9. Compare against the exact parent baseline.
+10. KEEP or DISCARD.
+11. Commit only reproducible kept changes; log discarded ideas as notes if informative.
+
+## Required baseline sequence
+
+Do not begin optimization without all three:
+
+### B0 — trivial valid world
+
+Purpose: prove infrastructure.
+
+### B1 — direct small-model generation
+
+Purpose: establish the same model's unassisted baseline.
+
+### B2 — DSL-only generation
+
+Purpose: separate gains from syntax reliability versus numerical optimization.
+
+Only after B0–B2 should gauge fixing, CEM, free trajectories, or homotopy be credited.
+
+## Planned ablation sequence
+
+Run in this order:
+
+1. DSL;
+2. gauge fixing;
+3. camera/layout optimization;
+4. free trajectory fit;
+5. CEM simulator parameter fit;
+6. spline-to-physics homotopy;
+7. multi-hypothesis search;
+8. model-scale sweep;
+9. spectral rope/cloth extension.
+
+Do not jump to fine-tuning or RL unless this sequence shows the optimization scaffold is viable.
+
+## Proxy-objective validation
+
+The legal optimization proxy must use only the input video and candidate reconstruction.
+
+After runs are complete, evaluate whether proxy scores correlate with official metrics. This correlation analysis is allowed for research validation but must not leak privileged official targets into test-time optimization.
+
+Prefer Spearman correlation between:
+
+[
+-mathcal L_{proxy}
+]
+
+and each relevant official dynamics metric.
+
+If correlation is weak, improve measurement/proxy design before adding a more sophisticated optimizer.
+
+## Crash handling
+
+### Retry automatically
+
+Retry once when failure is clearly infrastructural:
+
+- transient container launch failure;
+- file-lock issue;
+- interrupted process;
+- temporary GPU allocation failure.
+
+### Fix and rerun
+
+Fix obvious deterministic defects:
+
+- invalid JSON;
+- checker-format mismatch;
+- wrong array dtype/shape;
+- missing executable bit;
+- missing output directory;
+- NaN caused by a clear transform bug.
+
+### Discard
+
+Discard the experiment if:
+
+- the idea requires privileged ground truth;
+- runtime exceeds the agreed single-GPU envelope without clear benefit;
+- the optimization objective does not correlate with the target behavior;
+- the method needs case-specific manual tuning;
+- dynamics consistently regress.
+
+## First research run
+
+The first substantive run after infrastructure must compare on the same cases:
+
+1. direct small-model baseline;
+2. structured scene-DSL baseline;
+3. scene DSL + gauge fixing;
+4. scene DSL + gauge fixing + CEM continuous optimization.
+
+No homotopy or deformable extension until these four rows exist.
+
