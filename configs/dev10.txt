@@ -1,0 +1,14 @@
+# Frozen Opt4D dev10 split (5 real + 5 synthetic)
+# Deterministic SHA256 ranking on available local reference videos.
+# Commit this file to make the split portable and auditable.
+# Do not reselect after observing results.
+real/abc_130k_01_dual_arm_robotic
+real/abc_130k_02_robot_arm_uses
+real/abc_130k_04_dual_arm_robot
+real/abc_130k_05_dual_robotic_arms
+real/abc_130k_06_dual_robot_grippers
+synthetic/B_01
+synthetic/B_02
+synthetic/B_03
+synthetic/B_04
+synthetic/B_05
