@@ -53,3 +53,25 @@ The strongest current novelty candidates are:
 - https://github.com/4DCodeBench/4DCodeBench
 - https://arxiv.org/abs/2610.03715
 
+
+## Native-only preparation (implemented)
+
+**No Docker** is used by Opt4D. The current implementation includes a native
+readiness checker, deterministic dev10 case-freezing, offline tests and a
+CPU-only CI smoke test. See [SSH/native setup instructions](docs/06_native_bootstrap.md).
+
+```bash
+bash scripts/update_research_autopilot.sh
+python prepare.py --benchmark ../4DCodeBench --json .local/readiness.json
+# Only after downloading reference videos from the complete dataset:
+python prepare.py --benchmark ../4DCodeBench --freeze-cases
+python prepare.py --benchmark ../4DCodeBench --strict --require-gpu
+python -m unittest discover -s tests -v
+python scripts/toy_optimize.py
+```
+
+**Readiness is not a benchmark result.** The scene compiler, model integration,
+and official evaluation wrapper are next milestones. No 4DCodeBench gain has
+been measured yet. The `configs/dev10.txt` split is generated on the target
+machine once the reference videos are available; no case IDs are fabricated.
+
