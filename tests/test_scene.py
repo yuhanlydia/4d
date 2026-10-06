@@ -52,11 +52,13 @@ class SceneTests(unittest.TestCase):
             out = compile_solution(src, root / "solution")
             self.assertTrue((out / "build.sh").is_file())
             self.assertTrue((out / "build.py").is_file())
-            self.assertTrue((out / "scene.json").is_file())
+            self.assertFalse((out / "scene.json").exists())
             build = (out / "build.sh").read_text(encoding="utf-8")
             self.assertIn("blender --background", build)
+            self.assertIn('"$WORKSPACE/world"', build)
             self.assertNotIn("docker", build.lower())
             self.assertNotIn("reference.mp4", (out / "build.py").read_text(encoding="utf-8"))
 
 if __name__ == "__main__":
     unittest.main()
+
