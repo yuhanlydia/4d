@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import json
 import math
-import shutil
 from pathlib import Path
 from typing import Any
 
@@ -107,18 +106,23 @@ def compile_solution(scene_path: str | Path, output_dir: str | Path) -> Path:
             raise ValueError(f"output exists and is not a directory: {out}")
     else:
         out.mkdir(parents=True)
-    (out / "scene.json").write_text(json.dumps(scene, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     runtime = Path(__file__).with_name("blender_runtime.py")
     if not runtime.is_file():
         raise FileNotFoundError(runtime)
-    shutil.copyfile(runtime, out / "build.py")
+    runtime_source = runtime.read_text(encoding="utf-8")
+    (out / "build.py").write_text(
+        runtime_source.replace("SCENE_SPEC = None", "SCENE_SPEC = " + repr(scene), 1),
+        encoding="utf-8",
+    )
     build = """#!/usr/bin/env bash
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
-rm -rf "$HERE/world"
-blender --background --factory-startup --python "$HERE/build.py" -- "$HERE/scene.json" "$HERE/world"
+WORKSPACE="$(cd "$HERE/.." && pwd)"
+rm -rf "$WORKSPACE/world"
+blender --background --factory-startup --python "$HERE/build.py" -- "$WORKSPACE/world"
 """
     path = out / "build.sh"
     path.write_text(build, encoding="utf-8")
     path.chmod(0o755)
     return out
+
