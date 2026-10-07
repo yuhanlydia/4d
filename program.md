@@ -99,9 +99,17 @@ official scorer across arms:
 The first B3/B4 attempt used the wrong camera transform convention and is
 explicitly rejected in `results.tsv`; corrected B3/B4 runs replayed the exact
 B2 scenes. B1 produced no checker-valid outputs. Do not treat the initial matrix
-as a clean win: first repair B1 and run a prospective, fully-valid comparison
-before proceeding to free trajectories, homotopy, or multi-hypothesis/model-
-scale experiments.
+as a clean win.
+
+Developmental child protocol after E04 diagnosis: B1 now canonicalizes only
+`schema_version`, source-video metadata, and the fixed camera values that are
+already supplied verbatim in the direct prompt. It does not repair model-inferred
+objects, geometry, or motion. This isolates schema/copying failure from direct
+scene-inference failure. The previous 0/10 B1 rows remain retained and invalid as
+a qualified baseline; rerun B1 prospectively before interpreting B1-vs-B2. B4
+proxy redesign remains pending until this baseline qualification is resolved.
+Do not proceed to free trajectories, homotopy, or multi-hypothesis/model-scale
+experiments yet.
 
 ## Setup
 
