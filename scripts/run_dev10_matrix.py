@@ -217,7 +217,7 @@ def _append_results(run_id: str, arm: str, cases: list[str], run_root: Path) -> 
         reward = json.loads(reward_path.read_text(encoding="utf-8")) if reward_path.exists() else {}
         rows.append({
             "experiment_id": f"{run_id}-{arm}", "commit": record.get("commit", ""),
-            "case_set": "dev10", "model": "Qwen3-VL-2B-Instruct", "params_b": "2.0",
+            "case_set": "dev10", "case_id": case, "model": "Qwen3-VL-2B-Instruct", "params_b": "2.0",
             "quantization": "fp16", "method": arm,
             "gauge_fix": "yes" if arm in {"B3", "B4", "P0", "P1", "P2"} else "no",
             "optimizer": "CEM" if arm in PROXY_ARM_MODE else "none",

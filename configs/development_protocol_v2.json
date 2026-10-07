@@ -1,0 +1,29 @@
+{
+  "protocol_id": "opt4d-dev10-development-v2",
+  "status": "developmental",
+  "benchmark": "4DCodeBench",
+  "case_manifest": "configs/dev10.txt",
+  "unblinding": "already_observed",
+  "model": "Qwen3-VL-2B-Instruct",
+  "arms": {
+    "B2": "structured DSL parent",
+    "P0": "gauge + flow CEM",
+    "P1": "gauge + flow + foreground-occupancy CEM",
+    "P2": "gauge + flow + foreground-occupancy + LK-track CEM",
+    "T0": "P2 parent + free trajectory fit projected to linear DSL",
+    "H0": "T0 with frozen spline-to-physics homotopy schedule"
+  },
+  "proxy_weights": {"flow": 1.0, "mask": 1.0, "track": 1.0},
+  "cem": {"population": 32, "iterations": 8, "seed": 0},
+  "free_trajectory": {"samples": 8, "smooth_lambda": 0.25},
+  "homotopy_schedule": [0.0, 0.25, 0.5, 0.75, 1.0],
+  "analysis": {
+    "unit": "case",
+    "design": "paired",
+    "bootstrap_resamples": 10000,
+    "bootstrap_seed": 20261007,
+    "report_win_tie_loss": true,
+    "report_spearman_proxy_vs_official": true
+  },
+  "claims": "developmental only; no confirmatory benchmark claim"
+}
