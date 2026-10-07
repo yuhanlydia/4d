@@ -144,12 +144,23 @@ def generate(video_path: Path, model_path: Path, method: str, max_new_tokens: in
                 "objects": parsed["objects"],
             }
         else:
-            scene = parsed
-            version = scene.get("schema_version") if isinstance(scene, dict) else None
-            if isinstance(version, str) and version.strip() in {"1", "1.0"}:
-                scene["schema_version"] = 1
-            if scene.get("video") != metadata:
-                raise ValueError("direct scene video metadata differs from the source video")
+            if not isinstance(parsed, dict):
+                raise ValueError("direct response must be a JSON object")
+            # Direct-generation qualification repair: canonicalize only fields whose
+            # exact values are already supplied verbatim in DIRECT_PROMPT. This
+            # removes serialization/copying failures without repairing inferred
+            # objects, geometry, motion, or adding information unavailable to B1.
+            scene = dict(parsed)
+            scene["schema_version"] = 1
+            scene["video"] = metadata
+            scene["camera"] = {
+                "intrinsics": [[metadata["width"], 0, metadata["width"] / 2],
+                               [0, metadata["width"], metadata["height"] / 2],
+                               [0, 0, 1]],
+                "extrinsic": [[1, 0, 0, 0], [0, 1, 0, 0],
+                              [0, 0, 1, 0], [0, 0, 0, 1]],
+            }
+            raw["direct_canonicalized_fields"] = ["schema_version", "video", "camera"]
         validate_scene(scene)
     except Exception as exc:
         raw["status"] = "failed_validation"
