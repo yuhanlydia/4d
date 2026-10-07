@@ -12,13 +12,13 @@ as a paired B1-vs-B2 comparison.
 
 ## Qualification criterion
 
-B1 qualifies as an operational dev10 baseline only if at least 8 of 10 cases
-complete the full local-validation, build, official-checker, and applicable
-official-scoring path, with at least 4 of 5 real and 4 of 5 synthetic cases
-completing. Cases with missing applicable official metrics, malformed output,
-checker failure, or scorer failure count as incomplete. Missing scores are not
-dropped from the denominator. This criterion is fixed before the rerun; it says
-nothing about whether B1 has good reconstruction quality.
+B1 qualifies as a complete operational dev10 baseline only if all 10 cases
+complete local validation, build, official checking, and applicable official
+scoring, with all applicable primary metrics present for every case. A low or
+zero valid score is still a completed measurement. Missing applicable metrics,
+malformed output, checker failure, or scorer failure means the criterion is not
+met; no case is dropped from the denominator. This criterion is fixed before
+the rerun and is about full-split measurability, not reconstruction quality.
 
 ## Debugging boundaries
 
