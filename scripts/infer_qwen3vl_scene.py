@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import re
 import sys
 import time
 from pathlib import Path
@@ -22,6 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from opt4d.scene import validate_scene
+from opt4d.model_output import parse_json_response
 
 
 DIRECT_PROMPT = """Infer a complete 4D scene from this video. Return exactly one JSON object with keys schema_version, video, camera, and objects. The exact video metadata is: {metadata}. Copy these values exactly. Use camera intrinsics [[width,0,width/2],[0,width,height/2],[0,0,1]] and identity 4x4 camera extrinsic. The object format is {{\"id\":1,\"name\":\"object_1\",\"kind\":\"cube\",\"size\":[0.5,0.5,0.5],\"position\":[0,0,3],\"rotation_euler\":[0,0,0],\"motion\":{{\"type\":\"static\"}}}}. Each object needs a unique positive id and name, kind cube or uv_sphere, positive size, position [x,y,z] with visible objects at positive z, rotation_euler in radians, and motion {{type: static}}, {{type: linear, velocity: [vx,vy,vz]}}, or {{type: hinge, axis: [x,y,z], pivot: [x,y,z], angle_start: radians, angle_end: radians}}. Observe temporal changes and encode moving objects as linear or hinge. Output the entire schema shown here, with the actual metadata values, and no prose or markdown."""
@@ -106,26 +106,13 @@ def generate(video_path: Path, model_path: Path, method: str, max_new_tokens: in
         "response": response,
         "prompt_tokens": prompt_tokens,
         "generated_tokens": generated_tokens,
+        "max_new_tokens": max_new_tokens,
+        "generation_hit_token_limit": generated_tokens >= max_new_tokens,
         "wall_s": elapsed,
         "peak_vram_gib": peak_vram,
     }
     try:
-        code_blocks = re.findall(r"```(?:json)?\s*(.*?)```", response, flags=re.DOTALL | re.IGNORECASE)
-        payload = code_blocks[0].strip() if code_blocks else response.strip()
-        try:
-            parsed = json.loads(payload)
-        except json.JSONDecodeError:
-            decoder = json.JSONDecoder()
-            parsed = None
-            for offset, char in enumerate(payload):
-                if char in "{[":
-                    try:
-                        parsed, _ = decoder.raw_decode(payload[offset:])
-                        break
-                    except json.JSONDecodeError:
-                        continue
-            if parsed is None:
-                raise ValueError("model response contains no complete JSON value")
+        parsed = parse_json_response(response)
         if method == "dsl":
             if isinstance(parsed, list):
                 parsed = {"objects": parsed}
@@ -203,3 +190,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
