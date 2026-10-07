@@ -24,7 +24,7 @@ Means use available official metrics. Dynamic IoU is available on 10 cases; the 
 | P1 flow + occupancy | 0.016129 | 0.051263 | 0.006752 | 0.118757 | 0.038248 | 0.774218 |
 | P2 + LK tracks | 0.016693 | 0.040725 | 0.005002 | 0.119099 | 0.039824 | 0.774218 |
 
-Every P1-vs-P0 paired official metric delta is exactly zero on its available cases. P1 changes the recorded proxy objective, but does not change the official outcomes in this run.
+Every P1-vs-P0 paired official metric delta is exactly zero on its available cases. A post-run hash audit found nine byte-identical scene JSON pairs; the only differing file was `real/abc_130k_04_dual_arm_robot`, where one velocity component differs by only 3e-17. In that case P1 records flow=1.800475 and mask=0.170179, and its total objective is their sum, so occupancy is wired into the objective but did not materially change the selected motion or official outcome.
 
 Paired P2-minus-P1 deltas are mixed:
 
