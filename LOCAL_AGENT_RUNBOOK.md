@@ -16,6 +16,12 @@ python -m unittest discover -s tests -v
 Acceptance requires readiness PASS and all software tests PASS. These are software checks, not scientific evidence.
 
 ## Development experiment queue
+
+B1 requalification is closed: FAIL (3/10 checker-valid, 2/10 scorer-complete).
+Do not spend additional development budget repairing duplicate names, truncation,
+or inferred motion on B1. The strict parser repair is retained as software
+correctness; B1 remains unqualified evidence, not a gate that must be rescued.
+
 Dev10 has already been inspected; all runs below are developmental.
 
 1. Proxy ablation, reusing the exact previously valid B2 parent scenes:
