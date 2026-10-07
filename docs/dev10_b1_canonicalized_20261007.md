@@ -19,9 +19,13 @@ canonicalization.
 
 - 3/10 scenes passed local validation and the official checker: synthetic
   `B_01`, `B_02`, and `B_05`.
-- 0/5 real cases passed. Four failed on duplicate object names; one returned an
-  empty `objects` list. Synthetic `B_03` and `B_04` also returned empty object
-  lists.
+- 0/5 real cases passed. Four complete responses failed on duplicate object
+  names. The fifth real response (`abc_130k_02_robot_arm_uses`) and synthetic
+  `B_03`/`B_04` hit the 1200-token generation ceiling and ended mid-JSON.
+- Correction from raw-output inspection: the three resulting `objects must be a
+  non-empty list` errors were parser misdiagnoses. The old fallback scanned into
+  the truncated root and accepted a nested `video` object as the scene root.
+  These were not empty model-produced object lists.
 - The official scorer exited with code 1; 2/10 cases completed without scorer
   failures. `B_02` passed checker but several scorer metrics failed because no
   visible-camera or dynamic-mesh registration candidate was found.
@@ -36,4 +40,6 @@ a reliable B1-vs-B2 quality comparison. No numeric qualification threshold
 was predeclared, so this note makes no threshold-based qualification claim.
 
 Raw generations, worlds, scorer logs, and model files remain on the experiment
-host and are not included in this repository update.
+host and are not included in this repository update. The parser bug is fixed in
+PR #6; the 1200-token outputs remain preserved as evidence.
+
