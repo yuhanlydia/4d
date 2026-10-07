@@ -112,9 +112,16 @@ failures. All 5 real cases failed object validation; the new evidence and limits
 are documented in `docs/dev10_b1_canonicalized_20261007.md`. Do not claim B1 is a
 qualified baseline or make a reliable B1-vs-B2 quality comparison: no numeric
 qualification threshold was predeclared and most cases lack valid official
-scores. B4 proxy redesign remains pending until baseline qualification is
-resolved. Do not proceed to free trajectories, homotopy, or multi-hypothesis/
-model-scale experiments yet.
+scores. B1 qualification is now closed for this developmental split: do not add automatic
+object repair after seeing dev10 failures. The next focused child protocol is the
+prospectively frozen proxy ablation in `docs/08_proxy_ablation_protocol.md`:
+P0=flow, P1=flow+temporal foreground occupancy, P2=P1+Lucas-Kanade track
+displacements. All use only input-video pixels and the same reused B2 scenes,
+CEM budget, and seed. Run `scripts/run_proxy_ablation.sh <parent-B2-run-id>`,
+then `scripts/analyze_proxy_ablation.py` for paired raw deltas and post-hoc
+Spearman diagnostics. Do not proceed to free trajectories, homotopy, or
+multi-hypothesis/model-scale experiments until P0/P1/P2 has a documented
+keep/discard decision.
 
 ## Setup
 
