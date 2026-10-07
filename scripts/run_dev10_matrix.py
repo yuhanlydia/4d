@@ -25,7 +25,7 @@ from opt4d.scene import compile_solution, validate_scene
 from opt4d.video_proxy import optimize_motion
 
 
-ARMS = ("B1", "B2", "B3", "B4")
+ARMS = ("B1", "B2", "B3", "B4", "P0", "P1", "P2")\nPROXY_ARM_MODE = {"B4": "flow", "P0": "flow", "P1": "flow_mask", "P2": "flow_mask_track"}
 SCORE_TYPES = "dynamic_iou,flow,track2d,trajectory,dynamics,scene_3d"
 MIN_FREE_BYTES = 6 * 1024**3
 
@@ -113,14 +113,18 @@ def _method_scene(arm: str, case: str, video: Path, run_root: Path,
     if arm in {"B3", "B4"}:
         scene, transform = gauge_fix_scene(scene)
         _json(case_root / "gauge.json", transform)
-    if arm == "B4":
-        scene, result = optimize_motion(scene, video, population=32, iterations=8, seed=0)
+    if arm in PROXY_ARM_MODE:
+        scene, result, proxy = optimize_motion(
+            scene, video, population=32, iterations=8, seed=0,
+            proxy_mode=PROXY_ARM_MODE[arm])
         _json(case_root / "cem.json", {
             "objective": result.fun, "iterations": result.iterations,
             "evaluations": result.evaluations, "history": result.history,
-            "seed": 0, "population": 32,
+            "seed": 0, "population": 32, "proxy": proxy,
         })
-        record.update({"proxy_loss": result.fun, "proxy_evals": result.evaluations})
+        record.update({"proxy_loss": result.fun, "proxy_evals": result.evaluations,
+                       "proxy_mode": proxy["mode"],
+                       "proxy_components": proxy["components"]})
     validate_scene(scene)
     _json(scene_path, scene)
     record.update({"status": "locally_validated", "wall_s": time.perf_counter() - started})
@@ -215,8 +219,8 @@ def _append_results(run_id: str, arm: str, cases: list[str], run_root: Path) -> 
             "experiment_id": f"{run_id}-{arm}", "commit": record.get("commit", ""),
             "case_set": "dev10", "model": "Qwen3-VL-2B-Instruct", "params_b": "2.0",
             "quantization": "fp16", "method": arm,
-            "gauge_fix": "yes" if arm in {"B3", "B4"} else "no",
-            "optimizer": "CEM" if arm == "B4" else "none",
+            "gauge_fix": "yes" if arm in {"B3", "B4", "P0", "P1", "P2"} else "no",
+            "optimizer": "CEM" if arm in PROXY_ARM_MODE else "none",
             "proxy_loss": record.get("proxy_loss", ""),
             "dynamic_iou": _value(reward, "dynamic_iou"),
             "flow_distribution": _value(reward, "flow_distribution"),
@@ -250,8 +254,8 @@ def main() -> int:
     parser.add_argument("--min-free-gb", type=float, default=6.0)
     args = parser.parse_args()
     selected_arms = args.arms
-    if any(arm in selected_arms for arm in ("B3", "B4")) and "B2" not in selected_arms and not args.reuse_b2_from:
-        parser.error("B3/B4 without B2 require --reuse-b2-from RUN_ID")
+    if any(arm in selected_arms for arm in ("B3", "B4", "P0", "P1", "P2")) and "B2" not in selected_arms and not args.reuse_b2_from:
+        parser.error("B3/B4/P0/P1/P2 without B2 require --reuse-b2-from RUN_ID")
     benchmark = args.benchmark.resolve()
     model_path = (args.model or Path(os.environ.get(
         "OPT4D_MODEL", "/root/rivermind-data/models/Qwen3-VL-2B-Instruct"))).resolve()
@@ -295,7 +299,7 @@ def main() -> int:
         "B1": "model generates complete scene JSON directly",
         "B2": "model generates object-only scene DSL; wrapper fixes camera/video",
         "B3": "B2 scene with projection-preserving center/scale gauge normalization",
-        "B4": "B3 scene with CEM motion fit to input-video optical flow distribution",
+        "B4": "legacy name for flow-only CEM",\n        "proxy_ablation": {"P0": "flow", "P1": "flow+mask occupancy",\n                           "P2": "flow+mask occupancy+LK tracks"},
         "optimizer": {"population": 32, "iterations": 8, "seed": 0},
         "official_scorer_types": SCORE_TYPES, "commit": commit,
         "benchmark_commit": benchmark_commit,
