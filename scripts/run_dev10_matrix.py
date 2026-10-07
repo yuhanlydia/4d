@@ -25,7 +25,8 @@ from opt4d.scene import compile_solution, validate_scene
 from opt4d.video_proxy import optimize_motion
 
 
-ARMS = ("B1", "B2", "B3", "B4", "P0", "P1", "P2")\nPROXY_ARM_MODE = {"B4": "flow", "P0": "flow", "P1": "flow_mask", "P2": "flow_mask_track"}
+ARMS = ("B1", "B2", "B3", "B4", "P0", "P1", "P2")
+PROXY_ARM_MODE = {"B4": "flow", "P0": "flow", "P1": "flow_mask", "P2": "flow_mask_track"}
 SCORE_TYPES = "dynamic_iou,flow,track2d,trajectory,dynamics,scene_3d"
 MIN_FREE_BYTES = 6 * 1024**3
 
@@ -110,7 +111,7 @@ def _method_scene(arm: str, case: str, video: Path, run_root: Path,
         record.update({"status": "blocked_by_B2", "error": "B2 scene missing"})
         return None, record
     scene = json.loads(source.read_text(encoding="utf-8"))
-    if arm in {"B3", "B4"}:
+    if arm in {"B3", "B4", "P0", "P1", "P2"}:
         scene, transform = gauge_fix_scene(scene)
         _json(case_root / "gauge.json", transform)
     if arm in PROXY_ARM_MODE:
@@ -299,7 +300,9 @@ def main() -> int:
         "B1": "model generates complete scene JSON directly",
         "B2": "model generates object-only scene DSL; wrapper fixes camera/video",
         "B3": "B2 scene with projection-preserving center/scale gauge normalization",
-        "B4": "legacy name for flow-only CEM",\n        "proxy_ablation": {"P0": "flow", "P1": "flow+mask occupancy",\n                           "P2": "flow+mask occupancy+LK tracks"},
+        "B4": "legacy name for flow-only CEM",
+        "proxy_ablation": {"P0": "flow", "P1": "flow+mask occupancy",
+                           "P2": "flow+mask occupancy+LK tracks"},
         "optimizer": {"population": 32, "iterations": 8, "seed": 0},
         "official_scorer_types": SCORE_TYPES, "commit": commit,
         "benchmark_commit": benchmark_commit,
@@ -373,3 +376,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
