@@ -23,19 +23,25 @@ def spearman(x,y):
     if np.std(rx)==0 or np.std(ry)==0:return None
     return float(np.corrcoef(rx,ry)[0,1])
 
+def collect_rows(run):
+    rows=[]
+    for arm in ARMS:
+        root=run/arm
+        if not root.is_dir(): continue
+        for record in sorted(root.rglob("run.json")):
+            case_dir=record.parent
+            reward=case_dir/"results"/"reward.json"; cem=case_dir/"cem.json"
+            if not (reward.exists() and cem.exists()): continue
+            rw=json.loads(reward.read_text()); ce=json.loads(cem.read_text()); rr=json.loads(record.read_text())
+            row={"arm":arm,"case":case_dir.relative_to(root).as_posix(),"checker_ok":bool(rr.get("checker_ok")),"objective":ce.get("objective")}
+            row.update({f"proxy_{k}":v for k,v in ce.get("proxy",{}).get("components",{}).items()})
+            for metric in METRICS: row[metric]=rw.get(metric)
+            rows.append(row)
+    return rows
+
 def main():
     ap=argparse.ArgumentParser(); ap.add_argument("--run-id",required=True); ap.add_argument("--root",type=Path,default=Path(__file__).resolve().parents[1]); args=ap.parse_args()
-    run=args.root/"runs"/args.run_id; rows=[]
-    for arm in ARMS:
-        for case_dir in sorted((run/arm).iterdir() if (run/arm).is_dir() else []):
-            if not case_dir.is_dir():continue
-            reward=case_dir/"results"/"reward.json"; cem=case_dir/"cem.json"; record=case_dir/"run.json"
-            if not (reward.exists() and cem.exists() and record.exists()):continue
-            rw=json.loads(reward.read_text()); ce=json.loads(cem.read_text()); rr=json.loads(record.read_text())
-            row={"arm":arm,"case":case_dir.name,"checker_ok":bool(rr.get("checker_ok")),"objective":ce.get("objective")}
-            row.update({f"proxy_{k}":v for k,v in ce.get("proxy",{}).get("components",{}).items()})
-            for m in METRICS: row[m]=rw.get(m)
-            rows.append(row)
+    run=args.root/"runs"/args.run_id; rows=collect_rows(run)
     summary={"run_id":args.run_id,"n_rows":len(rows),"arms":{},"spearman":{}}
     for arm in ARMS:
         rr=[r for r in rows if r["arm"]==arm]; summary["arms"][arm]={"n":len(rr),"checker_pass":sum(r["checker_ok"] for r in rr)}
@@ -61,3 +67,4 @@ def main():
     summary["paired_raw_deltas"]=paired
     out=run/"proxy_ablation_analysis.json"; out.write_text(json.dumps(summary,indent=2,sort_keys=True)+"\n"); print(out)
 if __name__=="__main__": main()
+
