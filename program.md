@@ -101,15 +101,20 @@ explicitly rejected in `results.tsv`; corrected B3/B4 runs replayed the exact
 B2 scenes. B1 produced no checker-valid outputs. Do not treat the initial matrix
 as a clean win.
 
-Developmental child protocol after E04 diagnosis: B1 now canonicalizes only
-`schema_version`, source-video metadata, and the fixed camera values that are
-already supplied verbatim in the direct prompt. It does not repair model-inferred
-objects, geometry, or motion. This isolates schema/copying failure from direct
-scene-inference failure. The previous 0/10 B1 rows remain retained and invalid as
-a qualified baseline; rerun B1 prospectively before interpreting B1-vs-B2. B4
-proxy redesign remains pending until this baseline qualification is resolved.
-Do not proceed to free trajectories, homotopy, or multi-hypothesis/model-scale
-experiments yet.
+Developmental child protocol after E04 diagnosis: B1 canonicalizes
+`schema_version=1`, source-video metadata, and fixed camera values; it does not
+repair model-inferred objects, geometry, or motion. The prompt names the schema
+field but does not specify the value `1`, so the canonicalization is not strictly
+limited to values stated verbatim in the prompt. The previous 0/10 B1 rows remain
+retained. A metadata/camera-canonicalized B1-only rerun completed on 2026-10-07:
+3/10 passed the official checker and 2/10 completed scoring without scorer
+failures. All 5 real cases failed object validation; the new evidence and limits
+are documented in `docs/dev10_b1_canonicalized_20261007.md`. Do not claim B1 is a
+qualified baseline or make a reliable B1-vs-B2 quality comparison: no numeric
+qualification threshold was predeclared and most cases lack valid official
+scores. B4 proxy redesign remains pending until baseline qualification is
+resolved. Do not proceed to free trajectories, homotopy, or multi-hypothesis/
+model-scale experiments yet.
 
 ## Setup
 
