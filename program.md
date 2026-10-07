@@ -2,7 +2,7 @@
 
 ## Goal
 
-Improve 4DCodeBench performance under a single ~22 GB GPU using 1B–7B models plus mathematical optimization.
+Improve 4DCodeBench performance under a single ~22 GB GPU using 1B鈥?B models plus mathematical optimization.
 
 Primary success metrics:
 
@@ -108,13 +108,24 @@ field but does not specify the value `1`, so the canonicalization is not strictl
 limited to values stated verbatim in the prompt. The previous 0/10 B1 rows remain
 retained. A metadata/camera-canonicalized B1-only rerun completed on 2026-10-07:
 3/10 passed the official checker and 2/10 completed scoring without scorer
-failures. All 5 real cases failed object validation; the new evidence and limits
-are documented in `docs/dev10_b1_canonicalized_20261007.md`. Do not claim B1 is a
+failures. Four real outputs had duplicate names; the fifth real output and
+synthetic `B_03`/`B_04` were truncated at 1200 tokens and misparsed by the old
+JSON fallback as empty objects. The correction is documented in
+`docs/dev10_b1_canonicalized_20261007.md`. Do not claim B1 is a
 qualified baseline or make a reliable B1-vs-B2 quality comparison: no numeric
 qualification threshold was predeclared and most cases lack valid official
-scores. B4 proxy redesign remains pending until baseline qualification is
-resolved. Do not proceed to free trajectories, homotopy, or multi-hypothesis/
-model-scale experiments yet.
+scores. A second, prospective B1-only qualification rerun completed on
+2026-10-07 (`dev10-b1-requal-20261007T204321Z`) with a strict top-level JSON
+parser and a 2400-token ceiling. The preregistered criterion required all 10
+cases to complete validation, build, checker, and applicable official scoring;
+the run achieved 3/10 checker passes and 2/10 scorer-complete cases, so B1
+remains unqualified. Four real outputs had duplicate names and three long
+outputs were truly truncated; the parser fix correctly reports truncation
+instead of mislabeling it as an empty object list. See
+`docs/dev10_b1_requal_20261007.md` and `results.tsv`. The parser fix is proposed
+in PR #6 and is not merged. B4 proxy redesign remains pending until baseline
+qualification is resolved. Do not proceed to free trajectories, homotopy, or
+multi-hypothesis/model-scale experiments yet.
 
 ## Setup
 
@@ -286,11 +297,11 @@ from the research comparison. The first research matrix is paired on the frozen
 dev10 cases and must keep model, video sampling, prompts/information access,
 resource limits, and official scoring fixed except for the named intervention:
 
-1. B1 — Direct generation: same small model, without the structured DSL or
+1. B1 鈥?Direct generation: same small model, without the structured DSL or
    numerical optimization.
-2. B2 — Scene DSL: constrain the model output to the typed scene representation.
-3. B3 — Scene DSL + gauge fixing.
-4. B4 — Scene DSL + gauge fixing + CEM.
+2. B2 鈥?Scene DSL: constrain the model output to the typed scene representation.
+3. B3 鈥?Scene DSL + gauge fixing.
+4. B4 鈥?Scene DSL + gauge fixing + CEM.
 
 Record every case and failure in `results.tsv` and preserve raw official scorer
 outputs. Do not credit later methods until B1-B4 have been compared. Then proceed
@@ -357,4 +368,5 @@ The first substantive run after infrastructure must compare on the same cases:
 4. scene DSL + gauge fixing + CEM continuous optimization.
 
 No homotopy or deformable extension until these four rows exist.
+
 
