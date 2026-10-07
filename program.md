@@ -62,27 +62,46 @@ Do not feed privileged scoring artifacts back into the agent.
 
 ## Current implementation / next milestone
 
-Implemented (native-only):
+Implemented and engineering-validated (native-only):
 
-- `prepare.py` environment/readiness checks, skill checkout verification and dev10 freeze;
-- `tests/test_prepare.py` offline tests;
-- `.github/workflows/native-smoke.yml` CI for the native tests and toy optimizer;
-- `docs/06_native_bootstrap.md` SSH instructions.
+- `prepare.py` readiness checks and deterministic dev10 freeze;
+- offline unit tests and CPU-only CI smoke tests;
+- the `scene.json` DSL/compiler for cube/UV-sphere objects with static,
+  linear-rigid, and hinge-articulated motion;
+- native Blender build plus official 4DCodeBench checker and scorer on
+  `synthetic/B_01`.
 
-The benchmark's downloaded case IDs are **not** committed or invented; obtain
-the reference videos on the target SSH machine, then freeze and commit
-`configs/dev10.txt` before any tuning. The 10-case split is pending until then.
+The frozen 10-case split is committed in `configs/dev10.txt` (5 real and 5
+synthetic cases). The B_01 checker/scorer run is an engineering acceptance
+result, not a method comparison or an Opt4D efficacy claim.
 
-The `scene.json` DSL/compiler source is now generated for cube/UV-sphere objects with
-static, linear-rigid, and hinge-articulated motion. It emits a self-contained
-`solution/build.sh`, `build.py`, and frozen `scene.json` using native Blender only.
-Status: **generated_unexecuted** until the target machine runs Blender and the
-official `python -m checker` against a built world. No official reconstruction
-scores are available yet.
+Research status: the first dev10 B1-B4 run and a corrected B3-B4 replay have
+completed on the native GPU host. `results.tsv` records per-case outputs,
+including failed and invalidated runs. These are developmental results, not
+confirmatory evidence; see `docs/dev10_b1b4_20261007.md` for run IDs, validity
+decisions, and the observed trade-offs.
 
-Next incomplete milestone remains milestone 2 acceptance: execute rigid and hinge
-smoke scenes natively, verify render metadata with ffprobe, and pass the official
-checker. Only then proceed to legal video measurement extraction.
+The runner fixes each arm as follows: B1 asks the same model for the complete
+scene JSON; B2 asks it only for the object DSL and fixes video/camera metadata in
+the wrapper; B3 applies projection-preserving scene center/scale gauge
+normalization to B2; B4 starts from B3 and fits motion parameters to optical flow
+computed only from the input video. CEM and gauge smoke checks are engineering
+checks, not benchmark results.
+
+The initial fixed dev10 comparison used the same model, data, sampling, and
+official scorer across arms:
+
+1. B1: Direct generation.
+2. B2: Scene DSL.
+3. B3: Scene DSL + gauge fixing.
+4. B4: Scene DSL + gauge fixing + CEM.
+
+The first B3/B4 attempt used the wrong camera transform convention and is
+explicitly rejected in `results.tsv`; corrected B3/B4 runs replayed the exact
+B2 scenes. B1 produced no checker-valid outputs. Do not treat the initial matrix
+as a clean win: first repair B1 and run a prospective, fully-valid comparison
+before proceeding to free trajectories, homotopy, or multi-hypothesis/model-
+scale experiments.
 
 ## Setup
 
@@ -247,37 +266,23 @@ For every experiment:
 10. KEEP or DISCARD.
 11. Commit only reproducible kept changes; log discarded ideas as notes if informative.
 
-## Required baseline sequence
+## Required baseline and ablation sequence
 
-Do not begin optimization without all three:
+B0 is an infrastructure-only trivial-world validation and is already separate
+from the research comparison. The first research matrix is paired on the frozen
+dev10 cases and must keep model, video sampling, prompts/information access,
+resource limits, and official scoring fixed except for the named intervention:
 
-### B0 — trivial valid world
+1. B1 — Direct generation: same small model, without the structured DSL or
+   numerical optimization.
+2. B2 — Scene DSL: constrain the model output to the typed scene representation.
+3. B3 — Scene DSL + gauge fixing.
+4. B4 — Scene DSL + gauge fixing + CEM.
 
-Purpose: prove infrastructure.
-
-### B1 — direct small-model generation
-
-Purpose: establish the same model's unassisted baseline.
-
-### B2 — DSL-only generation
-
-Purpose: separate gains from syntax reliability versus numerical optimization.
-
-Only after B0–B2 should gauge fixing, CEM, free trajectories, or homotopy be credited.
-
-## Planned ablation sequence
-
-Run in this order:
-
-1. DSL;
-2. gauge fixing;
-3. camera/layout optimization;
-4. free trajectory fit;
-5. CEM simulator parameter fit;
-6. spline-to-physics homotopy;
-7. multi-hypothesis search;
-8. model-scale sweep;
-9. spectral rope/cloth extension.
+Record every case and failure in `results.tsv` and preserve raw official scorer
+outputs. Do not credit later methods until B1-B4 have been compared. Then proceed
+in order to free-trajectory fitting, spline-to-physics homotopy, and
+multi-hypothesis/model-scale experiments.
 
 Do not jump to fine-tuning or RL unless this sequence shows the optimization scaffold is viable.
 
