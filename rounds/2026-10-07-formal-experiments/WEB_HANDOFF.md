@@ -3,7 +3,7 @@
 Status: **generated_unexecuted**.
 
 ## Current evidence
-B1 direct generation remained structurally unreliable after deterministic metadata/camera canonicalization. B2 established a valid structured DSL path. Corrected B3 showed projection-preserving gauge behavior. Flow-only B4 improved some motion proxies/metrics while worsening others, motivating a prospective developmental proxy decomposition.
+B1 direct generation failed its predeclared operational requalification (3/10 checker-valid; 2/10 scorer-complete). The strict top-level parser fix correctly distinguishes genuine token truncation from malformed/nested recovery. B1 is closed as an unqualified developmental baseline and must not be post-hoc repaired on dev10. B2 established a valid structured DSL path. Corrected B3 showed projection-preserving gauge behavior. Flow-only B4 improved some motion proxies/metrics while worsening others, motivating a prospective developmental proxy decomposition.
 
 ## Frozen next decisions
 A. Run P0/P1/P2 exactly as `docs/08_proxy_ablation_protocol.md` and `configs/development_protocol_v2.json`.
