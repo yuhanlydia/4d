@@ -112,16 +112,23 @@ failures. All 5 real cases failed object validation; the new evidence and limits
 are documented in `docs/dev10_b1_canonicalized_20261007.md`. Do not claim B1 is a
 qualified baseline or make a reliable B1-vs-B2 quality comparison: no numeric
 qualification threshold was predeclared and most cases lack valid official
-scores. B1 qualification is now closed for this developmental split: do not add automatic
-object repair after seeing dev10 failures. The next focused child protocol is the
-prospectively frozen proxy ablation in `docs/08_proxy_ablation_protocol.md`:
+scores. B1 operational requalification is now complete and **FAILED** under the predeclared
+criterion: 3/10 checker-valid and 2/10 scorer-complete at the 2400-token ceiling.
+The strict top-level JSON parser correctly identifies truncation; remaining failures
+are four duplicate-name outputs, three genuine truncations, and missed motion in a
+valid synthetic case. Do not continue post-hoc B1 repair on dev10 and do not claim a
+reliable B1-vs-B2 efficacy comparison. Preserve B1 as an unqualified developmental
+baseline and retain every failed row.
+
+The current authorized next developmental protocol is the prospectively frozen
+proxy ablation in `docs/08_proxy_ablation_protocol.md`:
 P0=flow, P1=flow+temporal foreground occupancy, P2=P1+Lucas-Kanade track
-displacements. All use only input-video pixels and the same reused B2 scenes,
-CEM budget, and seed. Run `scripts/run_proxy_ablation.sh <parent-B2-run-id>`,
-then `scripts/analyze_proxy_ablation.py` for paired raw deltas and post-hoc
-Spearman diagnostics. Do not proceed to free trajectories, homotopy, or
-multi-hypothesis/model-scale experiments until P0/P1/P2 has a documented
-keep/discard decision.
+displacements. All reuse the same valid B2 parent scenes with identical CEM
+population, iterations, seed, and input-video-only information. Run
+`scripts/run_proxy_ablation.sh <parent-B2-run-id>`, then perform E04 using
+`scripts/analyze_proxy_ablation.py`. Do not proceed to free trajectories,
+homotopy, or multi-hypothesis/model-scale experiments until P0/P1/P2 has a
+documented keep/discard decision.
 
 ## Setup
 
