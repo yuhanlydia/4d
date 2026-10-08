@@ -372,3 +372,12 @@ The first substantive run after infrastructure must compare on the same cases:
 
 No homotopy or deformable extension until these four rows exist.
 
+
+
+## Latest Proxy Ablation Outcome (2026-10-07)
+
+The frozen P0/P1/P2 run completed: 10/10 official checker and scorer cases for each arm. See `docs/dev10_proxy_ablation_20261007.md` and the 30 per-case rows in `results.tsv`.
+
+P1 (flow + occupancy) is discarded in its current implementation: every paired official metric ties P0. Correction: under the pinned official scorer, all listed dynamics metrics are higher-is-better. P2 has mixed paired outcomes: Dynamic IoU, Trajectory DTW, and EMD step rise slightly; Flow and Track2D decline; Scene 3D is unchanged. P2 is inconclusive, not an established overall discard or win.
+
+Do not proceed to free trajectories or homotopy. First audit confirms occupancy enters the objective but produced no material motion change (9/10 scene files are byte-identical; the remaining velocity difference is 3e-17). Inspect proxy sensitivity/candidate ranking and predeclare a quantitative decision rule for any new child protocol. The committed artifacts do not contain candidate-population rank traces; remote artifacts remain to be checked when SSH access is available. The matrix runner now applies gauge fixing consistently to P0/P1/P2. The analysis script now recursively handles the benchmark's real/synthetic case directories; its nested-path regression test is in `tests/test_proxy_ablation_analysis.py`.
