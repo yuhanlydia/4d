@@ -78,3 +78,7 @@ on `synthetic/B_01`; the recorded scores are not an Opt4D ablation claim. The
 `configs/dev10.txt` split is frozen and portable, and the next experiment is
 the fixed dev10 baseline/ablation matrix.
 
+
+## Current E04 continuation (2026-10-08)
+
+Proxy P0/P1/P2 completed 30/30 native checker and scorer evaluations. P1 ties P0 and P2 remains inconclusive under the pinned scorer's higher-is-better reward convention. The next legitimate step is a video-only [proxy sensitivity diagnosis](docs/e04_proxy_sensitivity_20261008.md) of existing candidate motion, **not** another method/scorer run. Read the [current round handoff](rounds/2026-10-08-e04-proxy/WEB_HANDOFF.md), [checkpoint](rounds/2026-10-08-e04-proxy/CHECKPOINT.md) and [hosted Work goal](rounds/2026-10-08-e04-proxy/WORK_GOAL.md); the hosted goal has **not** been activated in this Web chat. Local GPU execution and newly generated diagnostic software tests are pending.
