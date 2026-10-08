@@ -15,7 +15,35 @@ python -m unittest discover -s tests -v
 ```
 Acceptance requires readiness PASS and all software tests PASS. These are software checks, not scientific evidence.
 
-## Development experiment queue
+
+## Current immediate Local job: E04 proxy diagnostics (2026-10-08)
+
+Read the current [round handoff](rounds/2026-10-08-e04-proxy/WEB_HANDOFF.md)
+and frozen [diagnostic protocol](docs/e04_proxy_sensitivity_20261008.md).
+The P0/P1/P2 matrix is already complete and merged; **do not rerun it**.
+Source/contract tests for the diagnostic are generated_unexecuted until the
+native Local controller qualifies them. Restore the real SSH alias, Conda
+environment and installed research-autopilot native run_harness.py entry first.
+The inner zero-GPU diagnostic command is:
+
+```bash
+python scripts/diagnose_proxy_sensitivity.py \
+  --benchmark ../4DCodeBench \
+  --source-run dev10-proxy-ablation-20261007T212228Z \
+  --source-arm P0 \
+  --cases configs/dev10.txt \
+  --max-parameters 12 \
+  --out runs/e04-proxy-sensitivity-20261008.json
+```
+
+Submit it only inside an admitted harness task on the separate GPU host; its
+exact host-specific outer launcher is pending Local restoration. Before execution,
+run native unit tests and inspect that all ten source P0 scene.json and
+reference.mp4 files exist. Keep full case fingerprints and task stdout/stderr.
+Do not open score/annotation/privileged-world files from the diagnostic.
+Do not start T0/H0 or another official scorer run on this evidence alone.
+
+## Historical development experiment queue
 
 B1 requalification is closed: FAIL (3/10 checker-valid, 2/10 scorer-complete).
 Do not spend additional development budget repairing duplicate names, truncation,
@@ -24,7 +52,7 @@ correctness; B1 remains unqualified evidence, not a gate that must be rescued.
 
 Dev10 has already been inspected; all runs below are developmental.
 
-1. Proxy ablation, reusing the exact previously valid B2 parent scenes:
+1. Completed historic proxy ablation, reusing the exact previously valid B2 parent scenes:
 ```bash
 bash scripts/run_proxy_ablation.sh <VALID_PARENT_B2_RUN_ID> ../4DCodeBench "$OPT4D_MODEL"
 ```
